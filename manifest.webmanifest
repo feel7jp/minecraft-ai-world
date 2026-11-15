@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "AIの世界であそぼう！",
+  "short_name": "AIの世界",
+  "description": "ブロックの世界を、いっしょに探検しよう。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#d9f6ff",
+  "theme_color": "#d9f6ff",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
