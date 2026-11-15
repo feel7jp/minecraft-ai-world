@@ -143,6 +143,15 @@ if (typeof document !== "undefined") {
 
   retry.addEventListener("click", loadConnection);
 
+  // A home-screen page can resume after the PC has restarted. Re-read its
+  // destination when returning from Minecraft instead of retaining an old URL.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") loadConnection();
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) loadConnection();
+  });
+
   copy.addEventListener("click", async () => {
     if (!currentServerUrl) return;
     try {
