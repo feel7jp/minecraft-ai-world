@@ -2,7 +2,6 @@ export const SERVER_PORT = 443;
 export const SERVER_NAME = "AIの世界";
 
 const GITHUB_API = "https://api.github.com/repos/feel7jp/minecraft-ai-world/contents/connection.json";
-const RAW_GITHUB = "https://raw.githubusercontent.com/feel7jp/minecraft-ai-world/main/connection.json";
 
 export function validateConnectionMetadata(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -65,25 +64,35 @@ async function fetchJson(url, options = {}) {
   return response.json();
 }
 
-export async function fetchConnectionMetadata() {
+export async function fetchConnectionMetadata(lastKnown = null) {
   const now = Date.now();
   const sources = [
     () => fetchJson(`${GITHUB_API}?_=${now}`, {
       headers: { Accept: "application/vnd.github.raw+json" },
     }),
     () => fetchJson(`./connection.json?_=${now}`),
-    () => fetchJson(`${RAW_GITHUB}?_=${now}`),
   ];
 
-  for (const load of sources) {
-    try {
-      const metadata = validateConnectionMetadata(await load());
-      if (metadata) return metadata;
-    } catch {
-      // Try the next public copy; never use a saved or hardcoded tunnel address.
+  const minimum = Date.parse(lastKnown?.updated_at ?? "") || 0;
+  let latest = null;
+  const reads = sources.map(async load => {
+    const metadata = validateConnectionMetadata(await load());
+    const updated = Date.parse(metadata?.updated_at ?? "");
+    if (!metadata || updated < minimum ||
+        (updated === minimum && metadata.server_url !== lastKnown?.server_url)) {
+      throw new Error("invalid-or-stale-connection");
     }
+    if (!latest || updated > Date.parse(latest.updated_at)) latest = metadata;
+  });
+
+  try {
+    await Promise.any(reads);
+  } catch {
+    throw new Error("connection-unavailable");
   }
-  throw new Error("connection-unavailable");
+  // Give the other copies a short chance to return a newer destination.
+  await Promise.race([Promise.allSettled(reads), new Promise(resolve => setTimeout(resolve, 300))]);
+  return latest;
 }
 
 if (typeof document !== "undefined") {
@@ -95,9 +104,16 @@ if (typeof document !== "undefined") {
   const address = document.querySelector("#address");
   const copy = document.querySelector("#copy");
   let currentServerHost = null;
+  let lastKnown = null;
+  let loadSequence = 0;
 
   function showLoading() {
+    currentServerHost = null;
     play.disabled = true;
+    register.removeAttribute("href");
+    register.setAttribute("aria-disabled", "true");
+    address.textContent = "接続先を見つけているよ…";
+    copy.disabled = true;
     playLabel.textContent = "世界をさがしているよ…";
     status.classList.remove("error");
     status.textContent = "接続先を見つけているよ…";
@@ -105,22 +121,20 @@ if (typeof document !== "undefined") {
   }
 
   function showUnavailable() {
-    currentServerHost = null;
-    play.disabled = true;
     playLabel.textContent = "いまは見つからないみたい";
-    register.href = "#";
-    register.setAttribute("aria-disabled", "true");
     address.textContent = "接続先を見つけられなかったよ";
-    copy.disabled = true;
     status.classList.add("error");
     status.textContent = "少し時間をおいて、もう一度ためしてね。";
     retry.hidden = false;
   }
 
   async function loadConnection() {
+    const sequence = ++loadSequence;
     showLoading();
     try {
-      const metadata = await fetchConnectionMetadata();
+      const metadata = await fetchConnectionMetadata(lastKnown);
+      if (sequence !== loadSequence) return;
+      lastKnown = metadata;
       // Minecraft's address field needs a hostname; its port is passed separately.
       currentServerHost = new URL(metadata.server_url).hostname;
       play.disabled = false;
@@ -133,7 +147,7 @@ if (typeof document !== "undefined") {
       status.textContent = "接続先を見つけたよ";
       retry.hidden = true;
     } catch {
-      showUnavailable();
+      if (sequence === loadSequence) showUnavailable();
     }
   }
 
