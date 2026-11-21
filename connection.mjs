@@ -45,12 +45,12 @@ export function validateConnectionMetadata(value) {
   });
 }
 
-export function buildConnectUri(serverUrl) {
-  return `minecraft://connect?serverUrl=${encodeURIComponent(serverUrl)}&serverPort=${SERVER_PORT}`;
+export function buildConnectUri(serverHost) {
+  return `minecraft://connect?serverUrl=${encodeURIComponent(serverHost)}&serverPort=${SERVER_PORT}`;
 }
 
-export function buildAddServerUri(serverUrl) {
-  const server = `${SERVER_NAME}|${serverUrl}:${SERVER_PORT}`;
+export function buildAddServerUri(serverHost) {
+  const server = `${SERVER_NAME}|${serverHost}:${SERVER_PORT}`;
   return `minecraft://?addExternalServer=${encodeURIComponent(server)}`;
 }
 
@@ -94,7 +94,7 @@ if (typeof document !== "undefined") {
   const register = document.querySelector("#register");
   const address = document.querySelector("#address");
   const copy = document.querySelector("#copy");
-  let currentServerUrl = null;
+  let currentServerHost = null;
 
   function showLoading() {
     play.disabled = true;
@@ -105,7 +105,7 @@ if (typeof document !== "undefined") {
   }
 
   function showUnavailable() {
-    currentServerUrl = null;
+    currentServerHost = null;
     play.disabled = true;
     playLabel.textContent = "いまは見つからないみたい";
     register.href = "#";
@@ -121,12 +121,13 @@ if (typeof document !== "undefined") {
     showLoading();
     try {
       const metadata = await fetchConnectionMetadata();
-      currentServerUrl = metadata.server_url;
+      // Minecraft's address field needs a hostname; its port is passed separately.
+      currentServerHost = new URL(metadata.server_url).hostname;
       play.disabled = false;
       playLabel.textContent = "あそぶ！";
-      register.href = buildAddServerUri(currentServerUrl);
+      register.href = buildAddServerUri(currentServerHost);
       register.setAttribute("aria-disabled", "false");
-      address.textContent = currentServerUrl;
+      address.textContent = currentServerHost;
       copy.disabled = false;
       status.classList.remove("error");
       status.textContent = "接続先を見つけたよ";
@@ -137,8 +138,8 @@ if (typeof document !== "undefined") {
   }
 
   play.addEventListener("click", () => {
-    if (!currentServerUrl) return;
-    window.location.href = buildConnectUri(currentServerUrl);
+    if (!currentServerHost) return;
+    window.location.href = buildConnectUri(currentServerHost);
   });
 
   retry.addEventListener("click", loadConnection);
@@ -153,10 +154,10 @@ if (typeof document !== "undefined") {
   });
 
   copy.addEventListener("click", async () => {
-    if (!currentServerUrl) return;
+    if (!currentServerHost) return;
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard-unavailable");
-      await navigator.clipboard.writeText(currentServerUrl);
+      await navigator.clipboard.writeText(currentServerHost);
       status.textContent = "住所をコピーしたよ";
     } catch {
       const selection = window.getSelection();
