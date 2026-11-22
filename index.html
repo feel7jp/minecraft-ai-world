@@ -9,8 +9,8 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./style.css">
-  <script type="module" src="./connection.mjs?v=3"></script>
+  <link rel="stylesheet" href="./style.css?v=4">
+  <script type="module" src="./connection.mjs?v=4"></script>
 </head>
 <body>
   <main class="page">
@@ -45,9 +45,9 @@
         <h1 id="title">AIの世界へ<br><span>ようこそ！</span></h1>
         <p class="intro">ブロックの世界を、いっしょに探検しよう。</p>
 
-        <button id="play" class="play" type="button" disabled>
+        <a id="play" class="play" aria-disabled="true">
           <span class="play-mark" aria-hidden="true">▶</span><span id="play-label">世界をさがしているよ…</span>
-        </button>
+        </a>
         <p id="status" class="status" role="status" aria-live="polite">接続先を見つけているよ…</p>
 
         <button id="retry" class="retry" type="button" hidden>もう一度さがす</button>

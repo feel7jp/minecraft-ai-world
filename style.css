@@ -78,9 +78,10 @@ h1 span { color: #27834d; }
   transition: transform .12s ease, background .12s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.play:not(:disabled):hover { background: #299951; transform: translateY(-2px); }
-.play:not(:disabled):active { transform: translateY(3px); border-bottom-width: 3px; }
-.play:disabled { cursor: wait; opacity: .74; }
+.play { text-decoration: none; }
+.play[href]:hover { background: #299951; transform: translateY(-2px); }
+.play[href]:active { transform: translateY(3px); border-bottom-width: 3px; }
+.play[aria-disabled="true"] { cursor: wait; opacity: .74; }
 .play-mark { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.22); font-size: .75rem; }
 .status { min-height: 1.4em; margin: 11px 0 0; color: #548077; font-size: .88rem; font-weight: 700; }
 .status.error { color: #a95338; }

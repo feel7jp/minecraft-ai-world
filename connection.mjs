@@ -2,6 +2,9 @@ export const SERVER_PORT = 443;
 export const SERVER_NAME = "AIの世界";
 
 const GITHUB_API = "https://api.github.com/repos/feel7jp/minecraft-ai-world/contents/connection.json";
+const GITHUB_RAW = "https://raw.githubusercontent.com/feel7jp/minecraft-ai-world/main/connection.json";
+const RECHECK_AFTER_MS = 60000;
+const CONNECTION_KEY = "minecraft-ai-world-destination";
 
 export function validateConnectionMetadata(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -54,28 +57,35 @@ export function buildAddServerUri(serverHost) {
 }
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
-    cache: "no-store",
-    mode: "cors",
-    signal: AbortSignal.timeout(8000),
-    ...options,
-  });
-  if (!response.ok) throw new Error(`status-${response.status}`);
-  return response.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      mode: "cors",
+      signal: controller.signal,
+      ...options,
+    });
+    if (!response.ok) throw new Error(`status-${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function fetchConnectionMetadata(lastKnown = null) {
   const now = Date.now();
   const sources = [
-    () => fetchJson(`${GITHUB_API}?_=${now}`, {
+    { primary: true, load: () => fetchJson(`${GITHUB_API}?_=${now}`, {
       headers: { Accept: "application/vnd.github.raw+json" },
-    }),
-    () => fetchJson(`./connection.json?_=${now}`),
+    }) },
+    { primary: true, load: () => fetchJson(`${GITHUB_RAW}?_=${now}`) },
+    { primary: false, load: () => fetchJson(`./connection.json?_=${now}`) },
   ];
 
   const minimum = Date.parse(lastKnown?.updated_at ?? "") || 0;
   let latest = null;
-  const reads = sources.map(async load => {
+  const reads = sources.map(async ({ primary, load }) => {
     const metadata = validateConnectionMetadata(await load());
     const updated = Date.parse(metadata?.updated_at ?? "");
     if (!metadata || updated < minimum ||
@@ -83,15 +93,26 @@ export async function fetchConnectionMetadata(lastKnown = null) {
       throw new Error("invalid-or-stale-connection");
     }
     if (!latest || updated > Date.parse(latest.updated_at)) latest = metadata;
+    return primary;
   });
 
+  let firstIsPrimary;
   try {
-    await Promise.any(reads);
+    firstIsPrimary = await Promise.any(reads);
   } catch {
     throw new Error("connection-unavailable");
   }
-  // Give the other copies a short chance to return a newer destination.
-  await Promise.race([Promise.allSettled(reads), new Promise(resolve => setTimeout(resolve, 300))]);
+  // Pages can lag behind the current branch. Wait for a primary when Pages responds first.
+  const waitFor = firstIsPrimary ? Promise.allSettled(reads) :
+    Promise.any(reads.slice(0, 2)).catch(() => {});
+  let timer;
+  try {
+    await Promise.race([waitFor, new Promise(resolve => {
+      timer = setTimeout(resolve, firstIsPrimary ? 200 : 1250);
+    })]);
+  } finally {
+    clearTimeout(timer);
+  }
   return latest;
 }
 
@@ -105,11 +126,16 @@ if (typeof document !== "undefined") {
   const copy = document.querySelector("#copy");
   let currentServerHost = null;
   let lastKnown = null;
-  let loadSequence = 0;
+  try {
+    lastKnown = validateConnectionMetadata(JSON.parse(sessionStorage.getItem(CONNECTION_KEY)));
+  } catch { /* The browser can deny access to session storage. */ }
+  let loading = null;
+  let lastChecked = 0;
 
   function showLoading() {
     currentServerHost = null;
-    play.disabled = true;
+    play.removeAttribute("href");
+    play.setAttribute("aria-disabled", "true");
     register.removeAttribute("href");
     register.setAttribute("aria-disabled", "true");
     address.textContent = "接続先を見つけているよ…";
@@ -128,16 +154,17 @@ if (typeof document !== "undefined") {
     retry.hidden = false;
   }
 
-  async function loadConnection() {
-    const sequence = ++loadSequence;
+  function loadConnection(force = false) {
+    if (loading || (!force && currentServerHost && Date.now() - lastChecked < RECHECK_AFTER_MS)) return;
     showLoading();
-    try {
-      const metadata = await fetchConnectionMetadata(lastKnown);
-      if (sequence !== loadSequence) return;
+    loading = fetchConnectionMetadata(lastKnown).then(metadata => {
       lastKnown = metadata;
+      try { sessionStorage.setItem(CONNECTION_KEY, JSON.stringify(metadata)); } catch { /* Optional. */ }
+      lastChecked = Date.now();
       // Minecraft's address field needs a hostname; its port is passed separately.
       currentServerHost = new URL(metadata.server_url).hostname;
-      play.disabled = false;
+      play.href = buildConnectUri(currentServerHost);
+      play.setAttribute("aria-disabled", "false");
       playLabel.textContent = "あそぶ！";
       register.href = buildAddServerUri(currentServerHost);
       register.setAttribute("aria-disabled", "false");
@@ -146,17 +173,25 @@ if (typeof document !== "undefined") {
       status.classList.remove("error");
       status.textContent = "接続先を見つけたよ";
       retry.hidden = true;
-    } catch {
-      if (sequence === loadSequence) showUnavailable();
-    }
+    }).catch(showUnavailable).finally(() => { loading = null; });
   }
 
-  play.addEventListener("click", () => {
-    if (!currentServerHost) return;
-    window.location.href = buildConnectUri(currentServerHost);
+  play.addEventListener("click", event => {
+    if (!currentServerHost || Date.now() - lastChecked >= RECHECK_AFTER_MS) {
+      event.preventDefault();
+      loadConnection(true);
+      return;
+    }
+    status.textContent = "Minecraftを開いているよ…";
+    window.setTimeout(() => {
+      if (document.visibilityState === "visible" && currentServerHost) {
+        status.textContent = "開かなければ、接続先を確認してもう一度あそぶを押してね。";
+        retry.hidden = false;
+      }
+    }, 1800);
   });
 
-  retry.addEventListener("click", loadConnection);
+  retry.addEventListener("click", () => loadConnection(true));
 
   // A home-screen page can resume after the PC has restarted. Re-read its
   // destination when returning from Minecraft instead of retaining an old URL.
