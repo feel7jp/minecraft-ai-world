@@ -1,16 +1,26 @@
 {
   "id": "./",
-  "name": "AIの世界であそぼう！",
-  "short_name": "AIの世界",
-  "description": "ブロックの世界を、いっしょに探検しよう。",
+  "name": "みんなのブロックワールド｜Minecraft統合版サーバー",
+  "short_name": "ブロックワールド",
+  "description": "Minecraft統合版のマルチプレイサーバー",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#d9f6ff",
-  "theme_color": "#d9f6ff",
+  "background_color": "#0c2018",
+  "theme_color": "#0c2018",
   "icons": [
-    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

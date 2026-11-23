@@ -118,7 +118,6 @@ export async function fetchConnectionMetadata(lastKnown = null) {
 
 if (typeof document !== "undefined") {
   const play = document.querySelector("#play");
-  const playLabel = document.querySelector("#play-label");
   const status = document.querySelector("#status");
   const retry = document.querySelector("#retry");
   const register = document.querySelector("#register");
@@ -138,19 +137,17 @@ if (typeof document !== "undefined") {
     play.setAttribute("aria-disabled", "true");
     register.removeAttribute("href");
     register.setAttribute("aria-disabled", "true");
-    address.textContent = "接続先を見つけているよ…";
+    address.textContent = "接続先を確認しています…";
     copy.disabled = true;
-    playLabel.textContent = "世界をさがしているよ…";
-    status.classList.remove("error");
-    status.textContent = "接続先を見つけているよ…";
+    status.classList.remove("error", "ready");
+    status.textContent = "接続先を確認しています…";
     retry.hidden = true;
   }
 
   function showUnavailable() {
-    playLabel.textContent = "いまは見つからないみたい";
-    address.textContent = "接続先を見つけられなかったよ";
+    address.textContent = "接続先を確認できませんでした";
     status.classList.add("error");
-    status.textContent = "少し時間をおいて、もう一度ためしてね。";
+    status.textContent = "接続先を確認できません。少し待ってから更新してください。";
     retry.hidden = false;
   }
 
@@ -165,13 +162,13 @@ if (typeof document !== "undefined") {
       currentServerHost = new URL(metadata.server_url).hostname;
       play.href = buildConnectUri(currentServerHost);
       play.setAttribute("aria-disabled", "false");
-      playLabel.textContent = "あそぶ！";
       register.href = buildAddServerUri(currentServerHost);
       register.setAttribute("aria-disabled", "false");
       address.textContent = currentServerHost;
       copy.disabled = false;
       status.classList.remove("error");
-      status.textContent = "接続先を見つけたよ";
+      status.classList.add("ready");
+      status.textContent = "接続先を確認しました";
       retry.hidden = true;
     }).catch(showUnavailable).finally(() => { loading = null; });
   }
@@ -182,10 +179,10 @@ if (typeof document !== "undefined") {
       loadConnection(true);
       return;
     }
-    status.textContent = "Minecraftを開いているよ…";
+    status.textContent = "Minecraftを開いています…";
     window.setTimeout(() => {
       if (document.visibilityState === "visible" && currentServerHost) {
-        status.textContent = "開かなければ、接続先を確認してもう一度あそぶを押してね。";
+        status.textContent = "Minecraftが開かないときは、下のヘルプを確認してください。";
         retry.hidden = false;
       }
     }, 1800);
@@ -207,14 +204,14 @@ if (typeof document !== "undefined") {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard-unavailable");
       await navigator.clipboard.writeText(currentServerHost);
-      status.textContent = "住所をコピーしたよ";
+      status.textContent = "サーバーアドレスをコピーしました";
     } catch {
       const selection = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(address);
       selection.removeAllRanges();
       selection.addRange(range);
-      status.textContent = "住所を選んだよ。長押ししてコピーしてね。";
+      status.textContent = "選択されたアドレスを長押ししてコピーしてください。";
     }
   });
 
