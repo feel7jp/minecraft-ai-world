@@ -130,30 +130,13 @@ if (typeof document !== "undefined") {
   } catch { /* The browser can deny access to session storage. */ }
   let loading = null;
   let lastChecked = 0;
+  let launchTimer;
 
-  function showLoading() {
-    currentServerHost = null;
-    play.removeAttribute("href");
-    play.setAttribute("aria-disabled", "true");
-    register.removeAttribute("href");
-    register.setAttribute("aria-disabled", "true");
-    address.textContent = "接続先を確認しています…";
-    copy.disabled = true;
-    status.classList.remove("error", "ready");
-    status.textContent = "接続先を確認しています…";
+  function loadConnection() {
+    if (loading) return;
+    status.classList.remove("error");
+    status.textContent = currentServerHost ? "接続先を更新しています…" : "接続先を確認しています…";
     retry.hidden = true;
-  }
-
-  function showUnavailable() {
-    address.textContent = "接続先を確認できませんでした";
-    status.classList.add("error");
-    status.textContent = "接続先を確認できません。少し待ってから更新してください。";
-    retry.hidden = false;
-  }
-
-  function loadConnection(force = false) {
-    if (loading || (!force && currentServerHost && Date.now() - lastChecked < RECHECK_AFTER_MS)) return;
-    showLoading();
     loading = fetchConnectionMetadata(lastKnown).then(metadata => {
       lastKnown = metadata;
       try { sessionStorage.setItem(CONNECTION_KEY, JSON.stringify(metadata)); } catch { /* Optional. */ }
@@ -170,29 +153,41 @@ if (typeof document !== "undefined") {
       status.classList.add("ready");
       status.textContent = "接続先を確認しました";
       retry.hidden = true;
-    }).catch(showUnavailable).finally(() => { loading = null; });
+    }).catch(() => {
+      status.classList.remove("ready");
+      status.classList.add("error");
+      if (currentServerHost) {
+        status.textContent = "更新できませんでした。前回の接続先で参加を試せます。";
+      } else {
+        address.textContent = "接続先を確認できませんでした";
+        status.textContent = "接続先を確認できません。少し待ってから更新してください。";
+      }
+      retry.hidden = false;
+    }).finally(() => { loading = null; });
   }
 
   play.addEventListener("click", event => {
-    if (!currentServerHost || Date.now() - lastChecked >= RECHECK_AFTER_MS) {
+    if (!currentServerHost) {
       event.preventDefault();
-      loadConnection(true);
+      loadConnection();
       return;
     }
-    status.textContent = "Minecraftを開いています…";
-    window.setTimeout(() => {
-      if (document.visibilityState === "visible" && currentServerHost) {
-        status.textContent = "Minecraftが開かないときは、下のヘルプを確認してください。";
+    // Keep the native link on the tap so Safari can hand off directly to Minecraft.
+    if (Date.now() - lastChecked >= RECHECK_AFTER_MS) loadConnection();
+    clearTimeout(launchTimer);
+    launchTimer = setTimeout(() => {
+      if (document.visibilityState === "visible" && !loading) {
+        status.textContent = "開かないときは、下の「アプリ切り替え後の復帰・初回設定」を確認してください。";
         retry.hidden = false;
       }
     }, 1800);
   });
 
-  retry.addEventListener("click", () => loadConnection(true));
+  retry.addEventListener("click", loadConnection);
 
-  // A home-screen page can resume after the PC has restarted. Re-read its
-  // destination when returning from Minecraft instead of retaining an old URL.
+  // Refresh on return without blocking a tap on the last confirmed destination.
   document.addEventListener("visibilitychange", () => {
+    clearTimeout(launchTimer);
     if (document.visibilityState === "visible") loadConnection();
   });
   window.addEventListener("pageshow", (event) => {
