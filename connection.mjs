@@ -176,7 +176,7 @@ if (typeof document !== "undefined") {
     clearTimeout(launchTimer);
     launchTimer = setTimeout(() => {
       if (document.visibilityState === "visible" && !loading) {
-        status.textContent = "開かないときは、下の「アプリ切り替え後の復帰・初回設定」を確認してください。";
+        status.textContent = "開かないときは、下の「iPhoneでWi-Fiを切ったとき・再接続できないとき」を確認してください。";
         retry.hidden = false;
       }
     }, 1800);
