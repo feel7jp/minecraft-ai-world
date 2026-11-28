@@ -142,7 +142,12 @@ if (typeof document !== "undefined") {
       lastChecked = Date.now();
       // Minecraft's address field needs a hostname; its port is passed separately.
       currentServerHost = new URL(metadata.server_url).hostname;
-      play.href = buildConnectUri(currentServerHost);
+      const joinUrl = new URL(buildConnectUri(currentServerHost));
+      if (new URLSearchParams(window.location.search).get("reconnect") === "1") {
+        joinUrl.searchParams.set("serverPort", "8443");
+        play.querySelector("span").textContent = "別の受付から再接続";
+      }
+      play.href = joinUrl.href;
       play.setAttribute("aria-disabled", "false");
       register.href = buildAddServerUri(currentServerHost);
       register.setAttribute("aria-disabled", "false");
