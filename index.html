@@ -10,8 +10,8 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./style.css?v=6">
-  <script type="module" src="./connection.mjs?v=6"></script>
+  <link rel="stylesheet" href="./style.css?v=7">
+  <script type="module" src="./connection.mjs?v=7"></script>
 </head>
 <body>
   <main class="page">
@@ -23,21 +23,24 @@
         <a id="play" class="play" role="link" aria-disabled="true" aria-describedby="status">
           <span>Minecraftで参加</span><span class="arrow" aria-hidden="true">→</span>
         </a>
-        <a id="register" class="register" role="link" aria-disabled="true" aria-describedby="register-help">Minecraftにサーバーを追加</a>
-        <p id="register-help" class="register-help">追加したら、次回はマイクラの「サーバー」→「AIの世界」から。</p>
         <p id="status" class="status" role="status">接続先を確認しています…</p>
         <button id="retry" class="retry" type="button" hidden>接続先を更新</button>
+        <section class="registration" aria-labelledby="registration-title">
+          <h2 id="registration-title">サーバーを登録する</h2>
+          <p>アドレスをコピーして、Minecraftの「プレイ」→「サーバー」→「サーバーを追加」で貼り付け、名前とポートを入力して保存します。</p>
+          <div class="address">
+            <strong>サーバーアドレス</strong>
+            <code id="address">確認中…</code>
+            <button id="copy" type="button" aria-label="サーバーアドレスをコピー" disabled>コピー</button>
+          </div>
+          <p>名前 <strong>AIの世界</strong>　ポート <strong>443</strong></p>
+          <a id="register" class="register" role="link" aria-disabled="true">Minecraftで追加画面を開く</a>
+        </section>
         <details>
           <summary>アプリ切り替え後の復帰・初回設定</summary>
           <div class="help">
             <p><strong>切り替え後に戻れない・Kelpが出るとき</strong><br>Minecraftのエラー画面を閉じ、タイトル画面の「プレイ」→「サーバー」→「AIの世界」を選んでください。</p>
-            <p><strong>手動で登録するとき</strong><br>Minecraftの「サーバーを追加」で、名前を「AIの世界」にし、下のアドレスとポートを入力して保存してください。接続先が変わったときは、このページで新しいアドレスを確認できます。</p>
-            <div class="address">
-              <strong>サーバーアドレス</strong>
-              <code id="address">確認中…</code>
-              <button id="copy" type="button" disabled>コピー</button>
-            </div>
-            <p>ポート <strong>443</strong></p>
+            <p>接続先が変わったときは、このページに表示される新しいアドレスに更新してください。</p>
           </div>
         </details>
       </section>

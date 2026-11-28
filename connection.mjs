@@ -52,8 +52,7 @@ export function buildConnectUri(serverHost) {
 }
 
 export function buildAddServerUri(serverHost) {
-  const server = `${SERVER_NAME}|${serverHost}:${SERVER_PORT}`;
-  return `minecraft://?addExternalServer=${encodeURIComponent(server)}`;
+  return `minecraft://?addExternalServer=${encodeURIComponent(SERVER_NAME)}|${encodeURIComponent(serverHost)}:${SERVER_PORT}`;
 }
 
 async function fetchJson(url, options = {}) {

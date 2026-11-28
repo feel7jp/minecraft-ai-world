@@ -55,10 +55,13 @@ summary::-webkit-details-marker { display: none; }
 summary::after { flex: 0 0 7px; height: 7px; margin: -4px 3px 0 0; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); content: ""; }
 details[open] summary::after { transform: rotate(225deg); margin-top: 4px; }
 .help { color: var(--muted); font-size: .87rem; line-height: 1.65; }
+.registration { margin-top: 16px; padding: 11px; border: 1px solid var(--line); border-radius: 10px; font-size: .87rem; line-height: 1.5; }
+.registration h2 { margin: 0 0 4px; font-size: 1rem; }
+.registration p { margin: 0; color: var(--muted); }
+.address + p { margin-top: 6px; }
 .register { display: grid; place-items: center; margin-top: 9px; color: var(--accent); text-align: center; text-decoration: none; }
 .register[href]:hover { background: #192f22; }
-.register-help { margin: 5px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
-.address { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; margin-top: 12px; }
+.address { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; margin-top: 9px; }
 .address strong { grid-column: 1 / -1; }
 .address code { overflow-wrap: anywhere; user-select: all; }
 .world { overflow: hidden; border-radius: 12px; background: #122b21; }
